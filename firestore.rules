@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: shortcuts
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required, immutable) - The ID of the owner
+    //   - fieldId: string (required) - The field this shortcut belongs to
+    //   - key: string (required) - The character that triggers the shortcut
+    //   - text: string (required) - The text to insert
+    //   - name: string (required) - The name of the shortcut
+    //
+    // Collection: consultations
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required, immutable) - The ID of the owner
+    //   - qp: string (optional) - Queixa Principal
+    //   - hda: string (optional) - História da Doença Atual
+    //   - ef: string (optional) - Exame Físico
+    //   - hd: string (optional) - Hipóteses Diagnósticas
+    //   - cd: string (optional) - Conduta
+    //   - createdAt: timestamp (required, immutable) - Creation time
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "mateusgenesedesantana@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidShortcut(data) {
+      return data.userId is string &&
+             data.fieldId is string &&
+             data.key is string && data.key.size() == 1 &&
+             data.text is string && data.text.size() < 5000 &&
+             data.name is string && data.name.size() < 100;
+    }
+
+    function isValidConsultation(data) {
+      return data.userId is string &&
+             (!('qp' in data) || data.qp is string) &&
+             (!('hda' in data) || data.hda is string) &&
+             (!('ef' in data) || data.ef is string) &&
+             (!('hd' in data) || data.hd is string) &&
+             (!('cd' in data) || data.cd is string) &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /shortcuts/{shortcutId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && 
+                      isValidShortcut(request.resource.data) && 
+                      isOwner(request.resource.data.userId);
+      allow update: if isAuthenticated() && 
+                      isValidShortcut(request.resource.data) && 
+                      isOwner(resource.data.userId) &&
+                      request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /consultations/{consultationId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() && 
+                      isValidConsultation(request.resource.data) && 
+                      isOwner(request.resource.data.userId);
+      allow update: if isAuthenticated() && 
+                      isValidConsultation(request.resource.data) && 
+                      isOwner(resource.data.userId) &&
+                      request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}

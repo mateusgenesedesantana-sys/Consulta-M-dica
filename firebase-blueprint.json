@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "Shortcut": {
+      "title": "Shortcut",
+      "description": "Custom keyboard shortcuts for anamnesis fields",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who owns the shortcut" },
+        "fieldId": { "type": "string", "description": "The ID of the field this shortcut belongs to (qp, hda, ef, hd, cd)" },
+        "key": { "type": "string", "description": "The character that triggers the shortcut with Ctrl" },
+        "text": { "type": "string", "description": "The text to be inserted" },
+        "name": { "type": "string", "description": "The display name of the shortcut" }
+      },
+      "required": ["userId", "fieldId", "key", "text", "name"]
+    },
+    "Consultation": {
+      "title": "Consultation",
+      "description": "A medical anamnesis consultation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who performed the consultation" },
+        "qp": { "type": "string", "description": "Queixa Principal" },
+        "hda": { "type": "string", "description": "História da Doença Atual" },
+        "ef": { "type": "string", "description": "Exame Físico" },
+        "hd": { "type": "string", "description": "Hipóteses Diagnósticas" },
+        "cd": { "type": "string", "description": "Conduta" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the consultation was created" }
+      },
+      "required": ["userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/shortcuts/{shortcutId}": {
+      "schema": "Shortcut",
+      "description": "Collection of user-defined shortcuts"
+    },
+    "/consultations/{consultationId}": {
+      "schema": "Consultation",
+      "description": "Collection of medical consultations"
+    }
+  }
+}
