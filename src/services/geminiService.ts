@@ -1,14 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 
 const getApiKey = () => {
-  // Try to get from process.env (injected by Vite define or AI Studio)
+  // 1. Prioritize VITE_ prefix (Standard for Vite/Vercel)
+  const viteKey = import.meta.env?.VITE_GEMINI_API_KEY;
+  if (viteKey && viteKey !== "undefined" && viteKey !== "null" && viteKey.length > 5) {
+    console.log("Gemini API Key detectada via VITE_GEMINI_API_KEY (Vercel)");
+    return viteKey;
+  }
+
+  // 2. Fallback to process.env (AI Studio / Vite define)
   if (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) {
+    console.log("Gemini API Key detectada via GEMINI_API_KEY (AI Studio)");
     return process.env.GEMINI_API_KEY;
   }
-  // Try to get from import.meta.env (Vite standard)
-  if (import.meta.env?.VITE_GEMINI_API_KEY) {
-    return import.meta.env.VITE_GEMINI_API_KEY;
-  }
+
   return "";
 };
 
@@ -16,7 +21,7 @@ const apiKey = getApiKey();
 const ai = new GoogleGenAI({ apiKey });
 
 if (!apiKey) {
-  console.warn("GEMINI_API_KEY não encontrada. As funções de IA não funcionarão corretamente até que a chave seja configurada nas variáveis de ambiente da Vercel.");
+  console.error("ERRO: GEMINI_API_KEY não encontrada! Verifique as variáveis de ambiente na Vercel.");
 }
 
 export async function improveText(text: string) {
