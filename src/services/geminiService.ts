@@ -1,13 +1,29 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.GEMINI_API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey || "" });
+const getApiKey = () => {
+  // Try to get from process.env (injected by Vite define or AI Studio)
+  if (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
+  }
+  // Try to get from import.meta.env (Vite standard)
+  if (import.meta.env?.VITE_GEMINI_API_KEY) {
+    return import.meta.env.VITE_GEMINI_API_KEY;
+  }
+  return "";
+};
+
+const apiKey = getApiKey();
+const ai = new GoogleGenAI({ apiKey });
+
+if (!apiKey) {
+  console.warn("GEMINI_API_KEY não encontrada. As funções de IA não funcionarão corretamente até que a chave seja configurada nas variáveis de ambiente da Vercel.");
+}
 
 export async function improveText(text: string) {
   if (!text.trim()) return text;
   
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-flash-latest",
     contents: `Organize o seguinte texto médico de forma clara, concisa e técnica, usando termos médicos apropriados. 
     NÃO inclua introduções, conclusões, comentários ou diagramações extras. Retorne APENAS o texto médico organizado.
     Mantenha o conteúdo original, apenas melhore a redação técnica.
@@ -21,7 +37,7 @@ export async function improveText(text: string) {
 
 export async function generateHypothesesAndPlan(hda: string, ef: string) {
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-flash-latest",
     contents: `Com base na História da Doença Atual (HDA) e no Exame Físico (EF) fornecidos, liste hipóteses diagnósticas e condutas resumidas.
     
     HDA: ${hda}
