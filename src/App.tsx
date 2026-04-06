@@ -40,13 +40,27 @@ export default function App() {
   const [showFinalResult, setShowFinalResult] = useState(false);
   const [finalText, setFinalText] = useState('');
 
+  const [isAutoLoginTried, setIsAutoLoginTried] = useState(false);
+
   // Auth
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
+      if (u) setView('consultation');
     });
     return () => unsubscribe();
   }, []);
+
+  // Auto-login attempt
+  useEffect(() => {
+    if (!user && !isAutoLoginTried && view === 'landing') {
+      const timer = setTimeout(() => {
+        handleLogin();
+        setIsAutoLoginTried(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, isAutoLoginTried, view]);
 
   // Shortcuts
   useEffect(() => {
@@ -156,14 +170,22 @@ export default function App() {
 >> [QP] - Queixa Principal:
 ${stripHtml(formData.qp)}
 
+
+
 >> [HDA] - História da Doença Atual:
 ${stripHtml(formData.hda)}
+
+
 
 >> [EF] - Exame Físico:
 ${stripHtml(formData.ef)}
 
+
+
 >> [HD] - Hipóteses Diagnósticas:
 ${stripHtml(formData.hd)}
+
+
 
 >> [CD] - Conduta:
 ${stripHtml(formData.cd)}`;
@@ -188,51 +210,68 @@ ${stripHtml(formData.cd)}`;
     }
   };
 
+  const resetConsultation = () => {
+    setFormData({ qp: '', hda: '', ef: '', hd: '', cd: '' });
+    setShowFinalResult(false);
+    setView('consultation');
+  };
+
   if (view === 'landing') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden font-sans">
         <ParticleBackground />
         
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="z-10 text-center px-4"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="z-10 text-center px-4 flex flex-col items-center"
         >
-          <div className="mb-8 inline-flex p-6 rounded-[2.5rem] bg-white border border-slate-200 shadow-xl shadow-blue-500/5">
-            <Stethoscope size={64} className="text-blue-600" />
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold text-slate-900 mb-6 tracking-tight">
-            Anamnese <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Moderna</span>
+          <motion.div 
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="mb-12 inline-flex p-8 rounded-[3rem] bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl shadow-blue-500/20"
+          >
+            <Stethoscope size={80} className="text-white" />
+          </motion.div>
+          
+          <h1 className="text-7xl md:text-9xl font-black text-white mb-8 tracking-tighter">
+            Anamnese
           </h1>
-          <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
-            Otimize suas consultas com inteligência artificial e ferramentas de produtividade clínica de última geração.
+          
+          <p className="text-blue-100/60 text-xl md:text-2xl max-w-2xl mx-auto mb-16 leading-relaxed font-medium">
+            Inteligência Artificial aplicada à produtividade clínica.
           </p>
 
-          {!user ? (
-            <button 
-              onClick={handleLogin}
-              className="group relative flex items-center gap-3 px-10 py-5 bg-slate-900 text-white font-bold rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-slate-900/20"
-            >
-              <UserIcon size={20} />
-              Entrar com Google
-            </button>
-          ) : (
-            <div className="flex flex-col items-center gap-6">
-              <button 
-                onClick={startConsultation}
-                className="group relative flex items-center gap-3 px-12 py-6 bg-blue-600 text-white font-bold rounded-2xl transition-all duration-300 hover:scale-105 hover:bg-blue-500 hover:shadow-2xl hover:shadow-blue-500/20"
-              >
-                <Plus size={24} />
-                Iniciar nova Consulta
-              </button>
-              <button onClick={handleLogout} className="text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-2 text-sm font-medium">
-                <LogOut size={16} /> Sair da conta
-              </button>
-            </div>
-          )}
+          <div className="flex flex-col items-center justify-center w-full">
+            {!user ? (
+              <div className="flex flex-col items-center gap-4">
+                <button 
+                  onClick={handleLogin}
+                  className="group relative flex items-center gap-4 px-12 py-6 bg-white text-blue-900 font-bold text-xl rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)]"
+                >
+                  <UserIcon size={24} />
+                  Entrar com Google
+                </button>
+                <p className="text-white/40 text-sm animate-pulse">Tentando conexão automática...</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-8">
+                <button 
+                  onClick={startConsultation}
+                  className="group relative flex items-center gap-4 px-16 py-8 bg-blue-500 text-white font-bold text-2xl rounded-3xl transition-all duration-300 hover:scale-105 hover:bg-blue-400 hover:shadow-[0_0_50px_rgba(59,130,246,0.5)]"
+                >
+                  <Plus size={32} />
+                  Iniciar nova Consulta
+                </button>
+                <button onClick={handleLogout} className="text-white/40 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium">
+                  <LogOut size={16} /> Sair da conta
+                </button>
+              </div>
+            )}
+          </div>
         </motion.div>
 
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-slate-400 text-sm font-medium tracking-widest uppercase">
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/20 text-xs font-bold tracking-[0.3em] uppercase">
           Hospital Memorial São Gabriel
         </div>
       </div>
@@ -348,11 +387,17 @@ ${stripHtml(formData.cd)}`;
                   <button 
                     onClick={() => {
                       navigator.clipboard.writeText(finalText);
-                      alert('Copiado para a área de transferência!');
                     }}
                     className="px-8 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
                   >
                     Copiar Texto
+                  </button>
+                  <button 
+                    onClick={resetConsultation}
+                    className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all flex items-center gap-2"
+                  >
+                    <Plus size={18} />
+                    Nova Consulta
                   </button>
                   <button 
                     onClick={() => setShowFinalResult(false)}

@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const getApiKey = () => {
   // 1. Prioritize VITE_ prefix (Standard for Vite/Vercel)
-  const viteKey = import.meta.env?.VITE_GEMINI_API_KEY;
+  const viteKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
   if (viteKey && viteKey !== "undefined" && viteKey !== "null" && viteKey.length > 5) {
     console.log("Gemini API Key detectada via VITE_GEMINI_API_KEY (Vercel)");
     return viteKey;
